@@ -3,8 +3,12 @@ import pygame           #load pygame module
 import sys
 import time
 
-w = 500                 #set width of screen
-h = 500                 #set height
+grid_h = 100
+grid_w = 100
+tile_size = 10
+
+w = grid_w*tile_size                 #set width of screen
+h = grid_h*tile_size                 #set height
 
 
 neighbors = [[0,-1], [0,1], [-1,-1], [-1,0], [-1,1], [1,-1], [1,0], [1,1]]
@@ -13,7 +17,7 @@ def show_fight(board, screen):
 	draw(screen, board)
 	pygame.display.flip()
 	c = 0
-	while c < 500:
+	while c < 200:
 		board = update(board)
 		draw(screen, board)
 		pygame.display.flip()
@@ -22,7 +26,7 @@ def show_fight(board, screen):
 
 def run_fight(board):
 	c = 0
-	while c < 500:
+	while c < 200:
 		board = update(board)
 		c += 1
 	return board
@@ -33,12 +37,43 @@ def main():
 	screen = pygame.display.set_mode((w, h)) #make screen
 
 	#initialize two players
-	player1 = [[random.randint(0, 1) for col in range(50)] for row in range(25)]
-	player2 = [[random.randint(0, 1)*2 for col in range(50)] for row in range(25)]
-	board = player1 + player2
+	global grid_h
+	global grid_w
+	global player1
+	global player2
+	global player3
+	global player4
+	global player5
+	global board
 
+	player1 = 0
+	player2 = 0
+	player3 = 0
+	player4 = 0
+	player5 = 0
+	board = 0
+	def init():
+		# global player1
+		# global player2
+		# global player3
+		# global player4
+		# global player5
+		global board
+		# player1 = [[random.randint(0, 1) for col in range(50)] for row in range(10)]
+		# player2 = [[random.randint(0, 1)*2 for col in range(50)] for row in range(10)]
+		# player3 = [[random.randint(0, 1)*3 for col in range(50)] for row in range(10)]
+		# player4 = [[random.randint(0, 1)*4 for col in range(50)] for row in range(10)]
+		# player5 = [[0 for col in range(50)] for row in range(10)]
+		# board = player1 + player2 + player3 + player4 + player5
+		board = [[
+		 random.randint(0, 1) if col < grid_w/2 and row < grid_h/2 else (
+		 random.randint(0, 1)*2 if col < grid_w/2 and row > grid_h/2 else (
+		 random.randint(0, 1)*3 if col > grid_w/2 and row < grid_h/2 else (
+		 random.randint(0, 1)*4 if col > grid_w/2 and row > grid_h/2 else 0))) for col in range(grid_w)] for row in range(grid_h)]
+
+	init()
 	#clock = pygame.time.Clock()
-	show = False
+	show = True
 	while True:
 		#time_passed = clock.tick(2)#fps
 
@@ -51,9 +86,10 @@ def main():
 		#based on the winner replace the loser with another random guess
 		winner = get_winner(board)
 		print winner
-		new_player1 = player1 if winner == 1 else [[random.randint(0, 1) for col in range(50)] for row in range(25)]
-		new_player2 = player2 if winner == 2 else [[random.randint(0, 1)*2 for col in range(50)] for row in range(25)]
-		board = new_player1 + new_player2
+		# new_player1 = player1 if winner == 1 else [[random.randint(0, 1) for col in range(50)] for row in range(25)]
+		# new_player2 = player2 if winner == 2 else [[random.randint(0, 1)*2 for col in range(50)] for row in range(25)]
+		# board = new_player1 + new_player2
+		init()
 		print time.time() - t
 
 		for event in pygame.event.get():
@@ -68,28 +104,37 @@ def main():
 					show = False if show else True
 
 def get_winner(board):
-	counts = [0, 0]
+	counts = [0, 0, 0, 0]
 	for row in range(len(board)):
 		for col in range(len(board[0])):
 			if board[row][col] != 0:
 				counts[board[row][col] - 1] += 1
-	return 1 if counts[0] > counts[1] else 2
+	return counts.index(max(counts))
 
 def update(board):
+	global grid_h
+	global grid_w
 	new_board = []
 	for row in range(len(board)):
 		new_board_row = []
 		for col in range(len(board[0])):
-			sums = [0, 0]
+			sums = [0, 0, 0, 0]
 			for n in neighbors:
-				new_row = (row + n[0]) % 50
-				new_col = (col + n[1]) % 50
+				new_row = (row + n[0]) % grid_h
+				new_col = (col + n[1]) % grid_w
 				if board[new_row][new_col] != 0:
 					player = board[new_row][new_col] - 1
 					sums[player] += 1
-			comparison = cmp(sums[1], sums[0])
-			new_player = board[row][col] - 1 if comparison == 0 else (comparison + 1) / 2 + 1
-			total = sums[0] + sums[1]
+
+			#decide what color this tile will become!
+			my_max = max(sums)
+			#if it's not a tie we change!
+			if sums.count(my_max) == 1:
+				biggest = sums.index(my_max)
+				new_player = biggest + 1
+			else:
+				new_player = board[row][col]
+			total = sum(sums)
 			if board[row][col] == 0:
 				if total == 3:
 					new_board_row.append(new_player)
@@ -104,11 +149,20 @@ def update(board):
 	return new_board
 
 def draw(screen, board):
-	tile_size = 10
+	global tile_size
 	#pygame.draw.line(screen, (255, 0, 0), (0, 0), (w, h))
 	for row in range(len(board)):
 		for col in range(len(board[0])):
-			pygame.draw.rect(screen, (0, (board[row][col])*100, 0), (col*tile_size, row*tile_size, tile_size, tile_size))
+			if board[row][col] == 1:
+				pygame.draw.rect(screen, (20, 180, 250), (col*tile_size, row*tile_size, tile_size, tile_size))
+			elif board[row][col] == 2:
+				pygame.draw.rect(screen, (250, 180, 20), (col*tile_size, row*tile_size, tile_size, tile_size))
+			elif board[row][col] == 3:
+				pygame.draw.rect(screen, (200, 200, 200), (col*tile_size, row*tile_size, tile_size, tile_size))
+			elif board[row][col] == 4:
+				pygame.draw.rect(screen, (50, 200, 50), (col*tile_size, row*tile_size, tile_size, tile_size))
+			else:
+				pygame.draw.rect(screen, (0, 0, 0), (col*tile_size, row*tile_size, tile_size, tile_size))
 
 
 if __name__ == '__main__': main()
