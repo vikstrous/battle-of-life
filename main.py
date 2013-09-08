@@ -146,8 +146,13 @@ def update(board):
             #decide what color this tile will become!
             my_max = max(sums)
             #if it's not a tie we change!
+            fight = 0
             if sums.count(my_max) == 1:
                 biggest = sums.index(my_max)
+                if board[row][col] != biggest + 1:
+                    fight = 1
+                else:
+                    fight = 0
                 new_player = biggest + 1
             else:
                 new_player = board[row][col]
@@ -161,7 +166,7 @@ def update(board):
                 if total != 2 and total != 3:
                     new_board_row.append(0)
                 else:
-                    new_board_row.append(new_player)
+                    new_board_row.append(board[row][col])
         new_board.append(new_board_row)
     return new_board
 
